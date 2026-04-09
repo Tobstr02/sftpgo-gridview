@@ -40,6 +40,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
             </div>
         </div>
         <div class="card-toolbar">
+            <div id="view-toggle" class="me-3"></div>
             <div class="d-flex justify-content-end" data-kt-filemanager-table-toolbar="base">
                 {{- if .CanCreateDirs}}
                 <button id="id_create_dir_button" type="button" class="btn btn-flex btn-light-primary me-3">
@@ -201,6 +202,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                 </tbody>
             </table>
         </div>
+        <div id="grid_view_container" class="grid-view d-none"></div>
     </div>
 </div>
 
@@ -209,12 +211,21 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 {{- define "extra_css"}}
 <link href="{{.StaticURL}}/assets/plugins/custom/datatables/datatables.bundle.css" rel="stylesheet" type="text/css"/>
 <link href="{{.StaticURL}}/vendor/imageviewer/imageviewer.css" rel="stylesheet" type="text/css"/>
+<link href="{{.StaticURL}}/webclient/css/grid-view.css" rel="stylesheet" type="text/css"/>
 {{- end}}
 
 {{- define "extra_js"}}
 <script {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}} src="{{.StaticURL}}/assets/plugins/custom/datatables/datatables.bundle.js"></script>
 <script {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}} src="{{.StaticURL}}/vendor/imageviewer/imageviewer.js"></script>
 <script {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}} src="{{.StaticURL}}/vendor/pdfobject/pdfobject.min.js"></script>
+<script src="{{.StaticURL}}/webclient/js/view-toggle.js"></script>
+<script src="{{.StaticURL}}/webclient/js/thumbnail-loader.js"></script>
+<script src="{{.StaticURL}}/webclient/js/grid-view.js"></script>
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        GridView.init('#grid_view_container');
+    });
+</script>
 <script type="text/javascript" {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}}>
     //{{- $move_copy_msg := ""}}
     //{{- if and .CanRename .CanCopy}}
