@@ -3,12 +3,14 @@ package thumbnail
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
 	"github.com/drakkan/sftpgo/v2/internal/logger"
+	"github.com/drakkan/sftpgo/v2/internal/thumbnail/cache"
 )
 
 const (
@@ -37,7 +39,7 @@ func (h *Handlers) handleGetThumbnail(w http.ResponseWriter, r *http.Request) {
 
 	data, contentType, err := h.service.GetCachedThumbnail(ctx, key)
 	if err != nil {
-		if err.Error() == "thumbnail not found" {
+		if errors.Is(err, cache.ErrNotFound) {
 			http.Error(w, "Not found", http.StatusNotFound)
 			return
 		}
