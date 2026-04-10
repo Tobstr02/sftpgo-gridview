@@ -850,7 +850,10 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                 order: [2, 'asc'],
                 initComplete: function(settings, json) {
                     $('#loader').addClass("d-none");
-                    $('#file_manager_list_container').removeClass("d-none");
+                    var currentView = localStorage.getItem('filesViewMode');
+                    if (currentView !== 'grid') {
+                        $('#file_manager_list_container').removeClass("d-none");
+                    }
                     let api = $.fn.dataTable.Api(settings);
                     api.columns.adjust().draw("page");
                 }
