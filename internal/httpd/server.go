@@ -47,6 +47,8 @@ import (
 	"github.com/drakkan/sftpgo/v2/internal/logger"
 	"github.com/drakkan/sftpgo/v2/internal/mfa"
 	"github.com/drakkan/sftpgo/v2/internal/smtp"
+	"github.com/drakkan/sftpgo/v2/internal/thumbnail"
+	"github.com/drakkan/sftpgo/v2/internal/thumbnail/cache"
 	"github.com/drakkan/sftpgo/v2/internal/util"
 	"github.com/drakkan/sftpgo/v2/internal/version"
 )
@@ -74,6 +76,7 @@ type httpdServer struct {
 	csrfTokenAuth     *jwt.Signer
 	signingPassphrase string
 	cors              CorsConfig
+	thumbHandler      *thumbHandler
 }
 
 func newHttpdServer(b Binding, staticFilesPath, signingPassphrase string, cors CorsConfig,
@@ -1246,6 +1249,19 @@ func (s *httpdServer) initializeRouter() error {
 	var hasHTTPSRedirect bool
 	s.tokenAuth = signer
 	s.csrfTokenAuth = csrfSigner
+
+	// Initialize thumbnail handler
+	thumbCache, err := cache.NewLocalCache(cache.LocalCacheConfig{
+		BasePath: filepath.Join(s.staticFilesPath, "..", "data", "thumbnails"),
+		TTL:      720 * time.Hour,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize thumbnail cache: %w", err)
+	}
+	generator := thumbnail.NewImageGenerator(256)
+	svc := thumbnail.NewThumbnailService(generator, thumbCache, 720*time.Hour)
+	s.thumbHandler = &thumbHandler{service: svc}
+
 	s.router = chi.NewRouter()
 
 	s.router.Use(middleware.RequestID)
@@ -1627,6 +1643,7 @@ func (s *httpdServer) setupWebClientRoutes() {
 			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientViewPDFPath, s.handleClientViewPDF)
 			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientGetPDFPath, s.handleClientGetPDF)
 			router.With(s.checkAuthRequirements, s.refreshCookie, s.verifyCSRFHeader).Get(webClientFilePath, getUserFile)
+			router.With(s.checkAuthRequirements, s.refreshCookie).Get(thumbPath, s.thumbHandler.handleThumbnail)
 			router.With(s.checkAuthRequirements, s.refreshCookie, s.verifyCSRFHeader).Get(webClientTasksPath+"/{id}",
 				getWebTask)
 			router.With(s.checkAuthRequirements, s.checkHTTPUserPerm(sdk.WebClientWriteDisabled), s.verifyCSRFHeader).

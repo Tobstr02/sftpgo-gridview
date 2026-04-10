@@ -1,14 +1,11 @@
 // webclient/js/thumbnail-loader.js
 const ThumbnailLoader = {
     observer: null,
-    thumbURL: '/thumb/generate',
-    cacheURL: '/thumb/',
-
+    thumbURL: '/web/client/thumb',
 
     init() {
         this.setupIntersectionObserver();
     },
-
 
     setupIntersectionObserver() {
         this.observer = new IntersectionObserver(
@@ -25,7 +22,7 @@ const ThumbnailLoader = {
     },
 
     observeAll() {
-        const cells = document.querySelectorAll('.thumbnail-cell[data-cache-key]');
+        const cells = document.querySelectorAll('.thumbnail-cell[data-path]');
         cells.forEach(cell => {
             const wrapper = cell.querySelector('.thumbnail-wrapper');
             if (wrapper && !wrapper.querySelector('img[src]') && !wrapper.querySelector('.error-state')) {
@@ -35,28 +32,22 @@ const ThumbnailLoader = {
     },
 
     loadThumbnail(cell) {
-        const key = cell.dataset.thumbKey;
+        const path = cell.dataset.path;
+        const mtime = cell.dataset.mtime;
+        const size = cell.dataset.size;
         const cacheKey = cell.dataset.cacheKey;
-        const url = cell.dataset.url;
 
         // Non-image cells have file-icon instead of thumbnail-wrapper
         const wrapper = cell.querySelector('.thumbnail-wrapper');
         if (!wrapper) return;
 
-        // Skip cells without cache-key (directories have file-icon, not images)
-        if (!cacheKey) return;
+        // Skip cells without path (directories have file-icon, not images)
+        if (!path) return;
 
-        if (cacheKey) {
-            this.showImage(cell, this.cacheURL + cacheKey);
-            return;
-        }
-
-        // Only request generation for image cells (those with thumbnail-wrapper)
-        if (url) {
-            this.requestGeneration(cell, url, key);
-        }
+        // Build thumbnail URL with query params
+        const url = `${this.thumbURL}?path=${encodeURIComponent(path)}&mtime=${mtime}&size=${size}`;
+        this.showImage(cell, url);
     },
-
 
     showImage(cell, src) {
         const wrapper = cell.querySelector('.thumbnail-wrapper');
@@ -89,32 +80,6 @@ const ThumbnailLoader = {
                 <i class="ki-duotone ki-picture fs-1"></i>
             </div>
         `;
-    },
-
-
-    async requestGeneration(cell, fileURL, key) {
-        try {
-            const response = await fetch(this.thumbURL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': window.csrfToken
-                },
-                body: JSON.stringify({ url: fileURL })
-            });
-
-
-            if (!response.ok) {
-                this.showError(cell, 'Generation failed');
-                return;
-            }
-
-            const data = await response.json();
-            cell.dataset.cacheKey = data.cache_key;
-            this.showImage(cell, this.cacheURL + data.cache_key);
-        } catch (err) {
-            this.showError(cell, 'Request failed');
-        }
     }
 };
 
