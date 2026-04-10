@@ -1251,12 +1251,22 @@ func (s *httpdServer) initializeRouter() error {
 	s.csrfTokenAuth = csrfSigner
 
 	// Initialize thumbnail handler
+	// Use /srv/sftpgo/data/thumbnails for Docker deployments, fall back to path relative to staticFilesPath
+	thumbBasePath := "/srv/sftpgo/data/thumbnails"
 	thumbCache, err := cache.NewLocalCache(cache.LocalCacheConfig{
-		BasePath: filepath.Join(s.staticFilesPath, "..", "data", "thumbnails"),
+		BasePath: thumbBasePath,
 		TTL:      720 * time.Hour,
 	})
 	if err != nil {
-		return fmt.Errorf("unable to initialize thumbnail cache: %w", err)
+		// Fall back to creating thumbnails directory relative to static files path
+		thumbBasePath = filepath.Join(s.staticFilesPath, "..", "data", "thumbnails")
+		thumbCache, err = cache.NewLocalCache(cache.LocalCacheConfig{
+			BasePath: thumbBasePath,
+			TTL:      720 * time.Hour,
+		})
+		if err != nil {
+			return fmt.Errorf("unable to initialize thumbnail cache: %w", err)
+		}
 	}
 	generator := thumbnail.NewImageGenerator(256)
 	svc := thumbnail.NewThumbnailService(generator, thumbCache, 720*time.Hour)
