@@ -87,6 +87,11 @@ const GridView = {
         if (this.container) {
             this.container.classList.remove('d-none');
         }
+        // Hide the list container
+        const listContainer = document.getElementById('file_manager_list_container');
+        if (listContainer) {
+            listContainer.classList.add('d-none');
+        }
         this.populateFromDataTable();
         ThumbnailLoader.observeAll();
     },
@@ -94,6 +99,11 @@ const GridView = {
     hide() {
         if (this.container) {
             this.container.classList.add('d-none');
+        }
+        // Show the list container
+        const listContainer = document.getElementById('file_manager_list_container');
+        if (listContainer) {
+            listContainer.classList.remove('d-none');
         }
     },
 
