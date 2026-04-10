@@ -10,6 +10,9 @@ const ViewToggle = {
         this.currentView = localStorage.getItem(this.STORAGE_KEY) || this.VIEW_GRID;
         this.render();
         this.bindEvents();
+        
+        // Dispatch initial view change event so other components can react
+        document.dispatchEvent(new CustomEvent('viewChanged', { detail: { view: this.currentView } }));
     },
 
     render() {
