@@ -22,11 +22,11 @@ const ViewToggle = {
 
         container.innerHTML = `
             <div class="btn-group" role="group">
-                <button type="button" class="btn btn-icon ${this.currentView === this.VIEW_LIST ? 'btn-primary' : 'btn-light'}" 
+                <button type="button" class="btn btn-icon ${this.currentView === this.VIEW_LIST ? 'btn-primary' : 'btn-secondary'}" 
                         data-view="${this.VIEW_LIST}" title="List view">
                     <i class="ki-duotone ki-row-vertical fs-2"></i>
                 </button>
-                <button type="button" class="btn btn-icon ${this.currentView === this.VIEW_GRID ? 'btn-primary' : 'btn-light'}" 
+                <button type="button" class="btn btn-icon ${this.currentView === this.VIEW_GRID ? 'btn-primary' : 'btn-secondary'}" 
                         data-view="${this.VIEW_GRID}" title="Grid view">
                     <i class="ki-duotone ki-grid fs-2"></i>
                 </button>

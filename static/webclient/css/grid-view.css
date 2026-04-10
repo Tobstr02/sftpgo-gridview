@@ -17,6 +17,10 @@
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+[data-bs-theme="dark"] .thumbnail-cell {
+    background: var(--kt-gray-900);
+}
+
 .thumbnail-cell:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -28,6 +32,10 @@
     width: 100%;
     padding-bottom: 100%; /* Square aspect ratio */
     background: var(--kt-gray-100);
+}
+
+[data-bs-theme="dark"] .thumbnail-wrapper {
+    background: var(--kt-gray-900);
 }
 
 .thumbnail-wrapper img {
@@ -51,6 +59,24 @@
     animation: skeleton-shimmer 1.5s infinite;
 }
 
+[data-bs-theme="dark"] .thumbnail-wrapper .skeleton {
+    background: linear-gradient(90deg, var(--kt-gray-800) 25%, var(--kt-gray-700) 50%, var(--kt-gray-800) 75%);
+    background-size: 200% 100%;
+}
+
+/* View toggle button overrides for dark mode */
+[data-bs-theme="dark"] #view-toggle .btn-secondary {
+    background-color: var(--kt-gray-800);
+    border-color: var(--kt-gray-700);
+    color: var(--kt-gray-300);
+}
+
+[data-bs-theme="dark"] #view-toggle .btn-secondary:hover {
+    background-color: var(--kt-gray-700);
+    border-color: var(--kt-gray-600);
+    color: var(--kt-white);
+}
+
 @keyframes skeleton-shimmer {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
@@ -69,6 +95,11 @@
     justify-content: center;
     background: var(--kt-gray-100);
     color: var(--kt-gray-500);
+}
+
+[data-bs-theme="dark"] .thumbnail-wrapper .error-state {
+    background: var(--kt-gray-900);
+    color: var(--kt-gray-400);
 }
 
 .thumbnail-wrapper .error-state i {
@@ -91,6 +122,11 @@
     color: var(--kt-gray-500);
 }
 
+[data-bs-theme="dark"] .file-icon {
+    background: var(--kt-gray-900);
+    color: var(--kt-gray-400);
+}
+
 .file-icon i {
     font-size: 48px;
     margin-bottom: 4px;
@@ -104,8 +140,15 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    background: white;
+    background: var(--kt-body-bg);
+    color: var(--kt-body-color);
     border-top: 1px solid var(--kt-gray-200);
+}
+
+[data-bs-theme="dark"] .cell-filename {
+    background: var(--kt-gray-900);
+    color: var(--kt-gray-300);
+    border-top-color: var(--kt-gray-700);
 }
 
 @media (max-width: 576px) {
