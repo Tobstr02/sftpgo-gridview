@@ -127,19 +127,21 @@ const GridView = {
 
         if (!isImage) {
             return `
-                <div class="thumbnail-cell" data-filename="${filename}">
-                    <div class="error-state">
+                <div class="thumbnail-cell" data-filename="${filename}" data-url="${url}">
+                    <div class="file-icon">
                         <i class="ki-duotone ki-file fs-2"></i>
-                        <span class="fs-7">${filename}</span>
                     </div>
+                    <span class="cell-filename">${filename}</span>
                 </div>
             `;
         }
 
         return `
             <div class="thumbnail-cell" data-filename="${filename}" data-cache-key="${cacheKey}" data-url="${url}">
-                <div class="skeleton"></div>
-                <span class="filename">${filename}</span>
+                <div class="thumbnail-wrapper">
+                    <div class="skeleton"></div>
+                </div>
+                <span class="cell-filename">${filename}</span>
             </div>
         `;
     },

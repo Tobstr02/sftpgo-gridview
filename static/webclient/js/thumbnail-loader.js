@@ -27,7 +27,8 @@ const ThumbnailLoader = {
     observeAll() {
         const cells = document.querySelectorAll('.thumbnail-cell[data-cache-key]');
         cells.forEach(cell => {
-            if (!cell.querySelector('img[src]') && !cell.querySelector('.error-state')) {
+            const wrapper = cell.querySelector('.thumbnail-wrapper');
+            if (wrapper && !wrapper.querySelector('img[src]') && !wrapper.querySelector('.error-state')) {
                 this.observer.observe(cell);
             }
         });
@@ -38,36 +39,51 @@ const ThumbnailLoader = {
         const cacheKey = cell.dataset.cacheKey;
         const url = cell.dataset.url;
 
+        // Non-image cells have file-icon instead of thumbnail-wrapper
+        const wrapper = cell.querySelector('.thumbnail-wrapper');
+        if (!wrapper) return;
+
         if (cacheKey) {
             this.showImage(cell, this.cacheURL + cacheKey);
             return;
         }
 
-        this.requestGeneration(cell, url, key);
+        // Only request generation for image cells (those with thumbnail-wrapper)
+        if (url) {
+            this.requestGeneration(cell, url, key);
+        }
     },
 
 
     showImage(cell, src) {
-        const skeleton = cell.querySelector('.skeleton');
+        const wrapper = cell.querySelector('.thumbnail-wrapper');
+        if (!wrapper) return;
+
+        const skeleton = wrapper.querySelector('.skeleton');
         if (skeleton) skeleton.remove();
 
-        let img = cell.querySelector('img');
+        let img = wrapper.querySelector('img');
         if (!img) {
             img = document.createElement('img');
             img.alt = cell.dataset.filename || 'Thumbnail';
-            cell.appendChild(img);
+            wrapper.appendChild(img);
         }
 
         img.onload = () => cell.classList.add('loaded');
-        img.onerror = () => this.showError(cell, 'Failed to load image');
+        img.onerror = () => this.showError(cell, 'Failed');
         img.src = src;
     },
 
     showError(cell, message) {
-        cell.innerHTML = `
+        const wrapper = cell.querySelector('.thumbnail-wrapper');
+        if (!wrapper) return;
+
+        const skeleton = wrapper.querySelector('.skeleton');
+        if (skeleton) skeleton.remove();
+
+        wrapper.innerHTML = `
             <div class="error-state">
-                <i class="ki-duotone ki-warning text-danger fs-2"></i>
-                <span class="fs-7">${message}</span>
+                <i class="ki-duotone ki-picture fs-1"></i>
             </div>
         `;
     },
