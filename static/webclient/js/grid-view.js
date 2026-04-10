@@ -13,14 +13,30 @@ const GridView = {
     },
 
     setupDataTableHook() {
-        // Hook into DataTables draw event to populate grid
-        if (typeof dt !== 'undefined' && dt.on) {
-            dt.on('draw.dt', () => {
+        // Hook into DataTables init/success event
+        const tryPopulate = () => {
+            if (this.container && ViewToggle.getView() === 'grid') {
                 this.populateFromDataTable();
-            });
-        }
-        // Also try to populate immediately if data already loaded
-        this.populateFromDataTable();
+            }
+        };
+
+        // Try immediately in case DataTable already initialized
+        setTimeout(tryPopulate, 0);
+        
+        // Hook into DataTables draw event when dt becomes available
+        const checkDt = setInterval(() => {
+            if (typeof dt !== 'undefined' && dt.on) {
+                dt.on('draw.dt', tryPopulate);
+                clearInterval(checkDt);
+                tryPopulate();
+            }
+        }, 100);
+        
+        // Also try again after a delay in case DataTable loads before we hook
+        setTimeout(() => {
+            clearInterval(checkDt);
+            tryPopulate();
+        }, 2000);
     },
 
     populateFromDataTable() {
@@ -71,6 +87,7 @@ const GridView = {
         if (this.container) {
             this.container.classList.remove('d-none');
         }
+        this.populateFromDataTable();
         ThumbnailLoader.observeAll();
     },
 
