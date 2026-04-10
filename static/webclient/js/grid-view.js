@@ -8,7 +8,47 @@ const GridView = {
         if (!this.container) return;
 
         this.setupViewListener();
+        this.setupDataTableHook();
         this.render();
+    },
+
+    setupDataTableHook() {
+        // Hook into DataTables draw event to populate grid
+        if (typeof dt !== 'undefined' && dt.on) {
+            dt.on('draw.dt', () => {
+                this.populateFromDataTable();
+            });
+        }
+        // Also try to populate immediately if data already loaded
+        this.populateFromDataTable();
+    },
+
+    populateFromDataTable() {
+        if (!this.container || ViewToggle.getView() !== 'grid') return;
+
+        const rows = document.querySelectorAll('#file_manager_list_body tr');
+        const items = [];
+
+        rows.forEach(row => {
+            const link = row.querySelector('a');
+            if (!link) return;
+
+            const name = link.textContent.trim();
+            const href = link.getAttribute('href');
+            const isDir = row.querySelector('.ki-folder') !== null;
+
+            if (!isDir) {
+                items.push({
+                    name: name,
+                    url: href,
+                    thumb_cache_key: ''
+                });
+            }
+        });
+
+        if (items.length > 0) {
+            this.setItems(items);
+        }
     },
 
     setupViewListener() {
@@ -89,3 +129,8 @@ const GridView = {
         return div.innerHTML;
     }
 };
+
+// Auto-initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    GridView.init('.grid-view');
+});

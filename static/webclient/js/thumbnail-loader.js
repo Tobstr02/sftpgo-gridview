@@ -25,7 +25,7 @@ const ThumbnailLoader = {
     },
 
     observeAll() {
-        const cells = document.querySelectorAll('.thumbnail-cell[data-thumb-key]');
+        const cells = document.querySelectorAll('.thumbnail-cell[data-cache-key]');
         cells.forEach(cell => {
             if (!cell.querySelector('img[src]') && !cell.querySelector('.error-state')) {
                 this.observer.observe(cell);
