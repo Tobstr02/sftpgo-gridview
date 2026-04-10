@@ -57,10 +57,26 @@ const GridView = {
             const href = link.getAttribute('href');
             const isDir = row.querySelector('.ki-folder') !== null;
 
+            // Extract mtime from URL's &_= timestamp param
+            let mtime = '';
+            const mtimeMatch = href.match(/[?&]_=([^&]+)/);
+            if (mtimeMatch) {
+                mtime = mtimeMatch[1];
+            }
+
+            // Extract size from cell index 2 (e.g., "222.2 KiB")
+            const cells = row.querySelectorAll('td');
+            let size = '';
+            if (cells.length >= 3) {
+                size = cells[2].textContent.trim();
+            }
+
             items.push({
                 name: name,
                 url: href,
                 isDir: isDir,
+                mtime: mtime,
+                size: size,
                 thumb_cache_key: ''
             });
         });
@@ -128,6 +144,16 @@ const GridView = {
         const cacheKey = item.thumb_cache_key || '';
         const url = item.url || '';
 
+        // Extract path from URL (e.g., "/web/client/files?path=/foo/bar&_=123")
+        let path = '';
+        const pathMatch = url.match(/[?&]path=([^&]+)/);
+        if (pathMatch) {
+            path = decodeURIComponent(pathMatch[1]);
+        }
+
+        const mtime = item.mtime || '';
+        const size = item.size || '';
+
         if (item.isDir) {
             return `
                 <a class="thumbnail-cell" href="${url}" data-filename="${filename}">
@@ -155,7 +181,7 @@ const GridView = {
         }
 
         return `
-            <div class="thumbnail-cell" data-filename="${filename}" data-cache-key="${cacheKey}" data-url="${url}">
+            <div class="thumbnail-cell" data-filename="${filename}" data-path="${path}" data-mtime="${mtime}" data-size="${size}" data-url="${url}">
                 <div class="thumbnail-wrapper">
                     <div class="skeleton"></div>
                 </div>

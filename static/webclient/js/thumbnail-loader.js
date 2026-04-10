@@ -22,7 +22,7 @@ const ThumbnailLoader = {
     },
 
     observeAll() {
-        const cells = document.querySelectorAll('.thumbnail-cell[data-path]');
+        const cells = document.querySelectorAll('.thumbnail-cell[data-mtime]');
         cells.forEach(cell => {
             const wrapper = cell.querySelector('.thumbnail-wrapper');
             if (wrapper && !wrapper.querySelector('img[src]') && !wrapper.querySelector('.error-state')) {
