@@ -13,7 +13,6 @@ const GridView = {
     },
 
     setupDataTableHook() {
-        // Hook into DataTables init/success event
         const tryPopulate = () => {
             if (this.container && ViewToggle.getView() === 'grid') {
                 this.populateFromDataTable();
@@ -21,22 +20,27 @@ const GridView = {
         };
 
         // Try immediately in case DataTable already initialized
-        setTimeout(tryPopulate, 0);
-        
-        // Hook into DataTables draw event when dt becomes available
-        const checkDt = setInterval(() => {
-            if (typeof dt !== 'undefined' && dt.on) {
-                dt.on('draw.dt', tryPopulate);
-                clearInterval(checkDt);
+        setTimeout(tryPopulate, 100);
+
+        // Use MutationObserver to watch for row changes in the table body
+        const tableBody = document.getElementById('file_manager_list_body');
+        if (tableBody) {
+            const observer = new MutationObserver(() => {
                 tryPopulate();
-            }
-        }, 100);
-        
-        // Also try again after a delay in case DataTable loads before we hook
+            });
+            observer.observe(tableBody, { childList: true, subtree: true });
+        }
+
+        // Also try periodically in case DataTable loads later
+        const checkDt = setInterval(() => {
+            tryPopulate();
+        }, 500);
+
+        // Stop checking after 10 seconds
         setTimeout(() => {
             clearInterval(checkDt);
             tryPopulate();
-        }, 2000);
+        }, 10000);
     },
 
     populateFromDataTable() {
@@ -53,13 +57,12 @@ const GridView = {
             const href = link.getAttribute('href');
             const isDir = row.querySelector('.ki-folder') !== null;
 
-            if (!isDir) {
-                items.push({
-                    name: name,
-                    url: href,
-                    thumb_cache_key: ''
-                });
-            }
+            items.push({
+                name: name,
+                url: href,
+                isDir: isDir,
+                thumb_cache_key: ''
+            });
         });
 
         if (items.length > 0) {
@@ -121,15 +124,30 @@ const GridView = {
 
     createCellHTML(item) {
         const filename = this.escapeHTML(item.name);
-        const isImage = this.isImageFile(item.name);
+        const isImage = !item.isDir && this.isImageFile(item.name);
         const cacheKey = item.thumb_cache_key || '';
         const url = item.url || '';
+
+        if (item.isDir) {
+            return `
+                <a class="thumbnail-cell" href="${url}" data-filename="${filename}">
+                    <div class="thumbnail-wrapper">
+                        <div class="file-icon">
+                            <i class="ki-duotone ki-folder fs-2"></i>
+                        </div>
+                    </div>
+                    <span class="cell-filename">${filename}</span>
+                </a>
+            `;
+        }
 
         if (!isImage) {
             return `
                 <div class="thumbnail-cell" data-filename="${filename}" data-url="${url}">
-                    <div class="file-icon">
-                        <i class="ki-duotone ki-file fs-2"></i>
+                    <div class="thumbnail-wrapper">
+                        <div class="file-icon">
+                            <i class="ki-duotone ki-file fs-2"></i>
+                        </div>
                     </div>
                     <span class="cell-filename">${filename}</span>
                 </div>

@@ -859,14 +859,20 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
             dt.on('draw.dt', drawAction);
 
             function drawAction() {
+                // Only manage list container visibility if grid view is not active
+                var currentView = localStorage.getItem('filesViewMode');
                 //{{- if .CanAddFiles}}
                 if (dt.rows().count() === 0) {
-                    $('#file_manager_list_container').addClass("d-none");
+                    if (currentView !== 'grid') {
+                        $('#file_manager_list_container').addClass("d-none");
+                    }
                     $('#upload_files_empty_container').removeClass("d-none");
                     return;
                 }
                 $('#upload_files_empty_container').addClass("d-none");
-                $('#file_manager_list_container').removeClass("d-none");
+                if (currentView !== 'grid') {
+                    $('#file_manager_list_container').removeClass("d-none");
+                }
                 //{{- end}}
                 KTMenu.createInstances();
 

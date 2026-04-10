@@ -43,6 +43,9 @@ const ThumbnailLoader = {
         const wrapper = cell.querySelector('.thumbnail-wrapper');
         if (!wrapper) return;
 
+        // Skip cells without cache-key (directories have file-icon, not images)
+        if (!cacheKey) return;
+
         if (cacheKey) {
             this.showImage(cell, this.cacheURL + cacheKey);
             return;
