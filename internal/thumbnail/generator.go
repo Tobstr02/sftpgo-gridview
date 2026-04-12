@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"image"
 	"io"
 	"mime"
 	"net/http"
 	"strings"
 
 	"github.com/disintegration/imaging"
+	_ "github.com/vegidio/heif-go"
 )
 
 var (
@@ -31,6 +33,8 @@ var supportedFormats = map[string]imaging.Format{
 	".png":  imaging.PNG,
 	".gif":  imaging.GIF,
 	".bmp":  imaging.BMP,
+	".heic": imaging.Format(-1), // HEIC - use heif-go decoder
+	".heif": imaging.Format(-1), // HEIF - use heif-go decoder
 }
 
 func (g *ImageGenerator) Generate(ctx context.Context, input io.Reader) ([]byte, error) {
@@ -39,13 +43,22 @@ func (g *ImageGenerator) Generate(ctx context.Context, input io.Reader) ([]byte,
 		return nil, err
 	}
 
-	if _, ok := g.detectFormat(data); !ok {
+	format, isHeic := g.detectFormat(data)
+	if !isHeic && format == imaging.Format(-1) {
 		return nil, ErrUnsupportedFormat
 	}
 
-	img, err := imaging.Decode(bytes.NewReader(data))
-	if err != nil {
-		return nil, ErrImageDecode
+	var img image.Image
+	if isHeic && format == imaging.Format(-1) {
+		img, _, err = image.Decode(bytes.NewReader(data))
+		if err != nil {
+			return nil, ErrImageDecode
+		}
+	} else {
+		img, err = imaging.Decode(bytes.NewReader(data))
+		if err != nil {
+			return nil, ErrImageDecode
+		}
 	}
 
 	thumb := imaging.Thumbnail(img, g.maxSize, g.maxSize, imaging.Lanczos)
@@ -60,16 +73,33 @@ func (g *ImageGenerator) Generate(ctx context.Context, input io.Reader) ([]byte,
 }
 
 func (g *ImageGenerator) detectFormat(data []byte) (imaging.Format, bool) {
+	if isHEIC(data) {
+		return imaging.Format(-1), true
+	}
 	contentType := http.DetectContentType(data)
-	ext, err := mime.ExtensionsByType(contentType)
-	if err != nil || len(ext) == 0 {
+	exts, err := mime.ExtensionsByType(contentType)
+	if err != nil || len(exts) == 0 {
 		return imaging.Format(-1), false
 	}
-	format, ok := supportedFormats[strings.ToLower(ext[0])]
-	if !ok {
-		return imaging.Format(-1), false
+	// Check all returned extensions - mime might return .jfif first for JPEG files
+	for _, ext := range exts {
+		format, ok := supportedFormats[strings.ToLower(ext)]
+		if ok {
+			return format, true
+		}
 	}
-	return format, true
+	return imaging.Format(-1), false
+}
+
+func isHEIC(data []byte) bool {
+	if len(data) < 12 {
+		return false
+	}
+	if string(data[4:8]) != "ftyp" {
+		return false
+	}
+	brand := string(data[8:12])
+	return brand == "heic" || brand == "mif1" || brand == "heix" || brand == "hevc" || brand == "hevx"
 }
 
 func (g *ImageGenerator) IsFormatSupported(filename string) bool {

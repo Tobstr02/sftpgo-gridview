@@ -58,6 +58,7 @@ require (
 	github.com/studio-b12/gowebdav v0.12.0
 	github.com/subosito/gotenv v1.6.0
 	github.com/unrolled/secure v1.17.0
+	github.com/vegidio/heif-go v0.0.0-20260325052619-b00ee76cfd53
 	github.com/wagslane/go-password-validator v0.3.0
 	github.com/wneessen/go-mail v0.7.2
 	github.com/yl2chen/cidranger v1.0.3-0.20210928021809-d1cb2c52f37a
