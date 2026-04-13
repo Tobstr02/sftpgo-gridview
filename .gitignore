@@ -1,3 +1,35 @@
 # compilation output
 sftpgo
 sftpgo.exe
+sftpgo.db
+sftpgo_test
+*.log
+docker.log
+
+# dependencies
+node_modules/
+package-lock.json
+
+# IDE and editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# testing and debug
+data/
+*.png
+*.jpg
+*.jpeg
+*.gif
+debug-thumb.js
+b2-creds.txt
+
+# internal tooling (not part of project)
+.sisyphus/
+.playwright-mcp/
+thoughts/
+
+# knowledge base (generated locally)
+AGENTS.md
+internal/**/AGENTS.md
