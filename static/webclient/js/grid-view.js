@@ -2,6 +2,7 @@
 const GridView = {
     container: null,
     items: [],
+    viewTransitionInProgress: false,
 
     init(containerSelector) {
         this.container = document.querySelector(containerSelector);
@@ -31,16 +32,9 @@ const GridView = {
             observer.observe(tableBody, { childList: true, subtree: true });
         }
 
-        // Also try periodically in case DataTable loads later
-        const checkDt = setInterval(() => {
-            tryPopulate();
-        }, 500);
-
-        // Stop checking after 10 seconds
         setTimeout(() => {
-            clearInterval(checkDt);
             tryPopulate();
-        }, 10000);
+        }, 2000);
     },
 
     populateFromDataTable() {
@@ -88,6 +82,10 @@ const GridView = {
 
     setupViewListener() {
         document.addEventListener('viewChanged', (e) => {
+            if (this.viewTransitionInProgress) {
+                return;
+            }
+            this.viewTransitionInProgress = true;
             if (e.detail.view === 'grid') {
                 this.show();
             } else {
@@ -103,6 +101,7 @@ const GridView = {
     },
 
     show() {
+        this.viewTransitionInProgress = true;
         if (this.container) {
             this.container.classList.remove('d-none');
         }
@@ -113,20 +112,25 @@ const GridView = {
         }
         this.populateFromDataTable();
         ThumbnailLoader.observeAll();
+        this.viewTransitionInProgress = false;
     },
 
     hide() {
+        this.viewTransitionInProgress = true;
         if (this.container) {
             this.container.classList.add('d-none');
         }
-        // Show the list container
         const listContainer = document.getElementById('file_manager_list_container');
         if (listContainer) {
             listContainer.classList.remove('d-none');
         }
+        this.viewTransitionInProgress = false;
     },
 
     setItems(items) {
+        const newKeys = items.map(i => i.url).join(',');
+        const oldKeys = this.items.map(i => i.url).join(',');
+        if (newKeys === oldKeys) return;
         this.items = items;
         this.renderItems();
     },
@@ -141,6 +145,7 @@ const GridView = {
     createCellHTML(item) {
         const filename = this.escapeHTML(item.name);
         const isImage = !item.isDir && this.isImageFile(item.name);
+        const isVideo = !item.isDir && this.isVideoFile(item.name);
         const cacheKey = item.thumb_cache_key || '';
         const url = item.url || '';
 
@@ -158,9 +163,21 @@ const GridView = {
             return `
                 <a class="thumbnail-cell" href="${url}" data-filename="${filename}">
                     <div class="thumbnail-wrapper">
-                        <div class="file-icon">
-                            <i class="ki-duotone ki-folder fs-2"></i>
-                        </div>
+                        <i class="ki-duotone ki-folder fs-1">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                        </i>
+                    </div>
+                    <span class="cell-filename">${filename}</span>
+                </a>
+            `;
+        }
+
+        if (isVideo) {
+            return `
+                <a class="thumbnail-cell video-cell" href="${url}" data-filename="${filename}">
+                    <div class="thumbnail-wrapper">
+                        <i class="ki-duotone ki-video fs-2x text-primary"></i>
                     </div>
                     <span class="cell-filename">${filename}</span>
                 </a>
@@ -171,9 +188,7 @@ const GridView = {
             return `
                 <div class="thumbnail-cell" data-filename="${filename}" data-url="${url}">
                     <div class="thumbnail-wrapper">
-                        <div class="file-icon">
-                            <i class="ki-duotone ki-file fs-2"></i>
-                        </div>
+                        <i class="ki-duotone ki-file fs-2"></i>
                     </div>
                     <span class="cell-filename">${filename}</span>
                 </div>
@@ -181,19 +196,24 @@ const GridView = {
         }
 
         return `
-            <div class="thumbnail-cell" data-filename="${filename}" data-path="${path}" data-mtime="${mtime}" data-size="${size}" data-url="${url}">
+            <a class="thumbnail-cell iv-gallery-item" href="${url}" data-iv-name="${filename}" data-filename="${filename}" data-path="${path}" data-mtime="${mtime}" data-size="${size}" data-url="${url}">
                 <div class="thumbnail-wrapper">
                     <div class="skeleton"></div>
                 </div>
                 <span class="cell-filename">${filename}</span>
-            </div>
+            </a>
         `;
     },
 
 
     isImageFile(filename) {
         const ext = filename.split('.').pop().toLowerCase();
-        return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext);
+        return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'heif'].includes(ext);
+    },
+
+    isVideoFile(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        return ['mp4', 'mov', 'webm', 'ogv', 'avi', 'mkv', 'heic', 'heif'].includes(ext);
     },
 
     escapeHTML(str) {

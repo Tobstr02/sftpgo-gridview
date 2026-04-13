@@ -1145,12 +1145,15 @@ func (s *httpdServer) checkConnection(next http.Handler) http.Handler {
 			)
 			return
 		}
-		if delay, err := common.LimitRate(common.ProtocolHTTP, ipAddr); err != nil {
-			delay += 499999999 * time.Nanosecond
-			w.Header().Set("Retry-After", fmt.Sprintf("%.0f", delay.Seconds()))
-			w.Header().Set("X-Retry-In", delay.String())
-			s.sendTooManyRequestResponse(w, r, err)
-			return
+		// Skip rate limiting for thumbnail requests - they have their own rate limiter
+		if r.URL.Path != thumbPath {
+			if delay, err := common.LimitRate(common.ProtocolHTTP, ipAddr); err != nil {
+				delay += 499999999 * time.Nanosecond
+				w.Header().Set("Retry-After", fmt.Sprintf("%.0f", delay.Seconds()))
+				w.Header().Set("X-Retry-In", delay.String())
+				s.sendTooManyRequestResponse(w, r, err)
+				return
+			}
 		}
 
 		next.ServeHTTP(w, r)

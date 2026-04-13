@@ -8,7 +8,11 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
+
+	"golang.org/x/time/rate"
 
 	"github.com/drakkan/sftpgo/v2/internal/common"
 	"github.com/drakkan/sftpgo/v2/internal/dataprovider"
@@ -32,7 +36,23 @@ var (
 	ErrThumbnailNotSupported = errors.New("thumbnail not supported for this file type")
 	// ErrThumbnailGenerationFailed is returned when thumbnail generation fails
 	ErrThumbnailGenerationFailed = errors.New("thumbnail generation failed")
+	// thumbnailRateLimiter provides 200 requests per second per IP for thumbnails
+	thumbnailRateLimiter = newThumbnailRateLimiter()
 )
+
+func newThumbnailRateLimiter() *sync.Map {
+	return &sync.Map{}
+}
+
+func getThumbnailRateLimiter(ip string) *rate.Limiter {
+	limiter, exists := thumbnailRateLimiter.Load(ip)
+	if exists {
+		return limiter.(*rate.Limiter)
+	}
+	newLimiter := rate.NewLimiter(rate.Limit(200), 200)
+	limiter, _ = thumbnailRateLimiter.LoadOrStore(ip, newLimiter)
+	return limiter.(*rate.Limiter)
+}
 
 // thumbHandler handles thumbnail generation and caching.
 // It generates thumbnails on-demand (synchronously) and caches them.
@@ -66,8 +86,16 @@ func (h *thumbHandler) handleThumbnail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ipAddr := util.GetIPFromRemoteAddress(r.RemoteAddr)
+	if !getThumbnailRateLimiter(ipAddr).Allow() {
+		http.Error(w, "Too many requests", http.StatusTooManyRequests)
+		return
+	}
+
 	// Parse query parameters
 	filePath := r.URL.Query().Get("path")
+	// URL decoding: Go's URL parser doesn't decode + to space (only HTML forms do)
+	filePath = strings.ReplaceAll(filePath, "+", " ")
 	if filePath == "" {
 		http.Error(w, "Missing path parameter", http.StatusBadRequest)
 		return
@@ -82,10 +110,12 @@ func (h *thumbHandler) handleThumbnail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	size, err := strconv.ParseInt(sizeStr, 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid size parameter", http.StatusBadRequest)
-		return
+	var size int64
+	if sizeStr != "" {
+		size, err = strconv.ParseInt(sizeStr, 10, 64)
+		if err != nil {
+			size = 0 // size is optional, only used for logging
+		}
 	}
 
 	// Create temporary connection for file access
@@ -107,10 +137,12 @@ func (h *thumbHandler) handleThumbnail(w http.ResponseWriter, r *http.Request) {
 
 	// Get the cleaned file path
 	cleanPath := connection.User.GetCleanedPath(filePath)
+	logger.Debug("thumbnail", connectionID, "GetCleanedPath input=%q output=%q startDir=%q", filePath, cleanPath, connection.User.Filters.StartDirectory)
 
 	// Verify the file exists and get its info
 	info, err := connection.Stat(cleanPath, 0)
 	if err != nil {
+		logger.Debug("thumbnail", connectionID, "Stat failed for path=%q cleanPath=%q: %v", filePath, cleanPath, err)
 		http.Error(w, "File not found", http.StatusNotFound)
 		return
 	}
@@ -139,6 +171,7 @@ func (h *thumbHandler) handleThumbnail(w http.ResponseWriter, r *http.Request) {
 	thumbData, contentType, err := h.service.GetCachedThumbnail(ctx, cacheKey)
 	if err == nil {
 		// Cache hit - return cached thumbnail
+		logger.Debug("thumbnail", connectionID, "Serving cached thumbnail for path %q", cleanPath)
 		h.serveThumbnail(w, r, thumbData, contentType, cacheKey)
 		return
 	}
@@ -148,7 +181,8 @@ func (h *thumbHandler) handleThumbnail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Cache miss - generate thumbnail
-	thumbData, err = h.generateThumbnail(connection, cleanPath)
+	logger.Debug("thumbnail", connectionID, "Generating thumbnail for provider %d path %q size %d", provider, cleanPath, size)
+	thumbData, err = h.generateThumbnail(connection, cleanPath, int(provider), size)
 	if err != nil {
 		if errors.Is(err, ErrThumbnailNotSupported) {
 			http.Error(w, "Unsupported image format", http.StatusUnsupportedMediaType)
@@ -171,7 +205,9 @@ func (h *thumbHandler) handleThumbnail(w http.ResponseWriter, r *http.Request) {
 
 // generateThumbnail reads the file and generates a thumbnail.
 // It uses the connection's getFileReader to properly handle permissions and quotas.
-func (h *thumbHandler) generateThumbnail(connection *Connection, filePath string) ([]byte, error) {
+func (h *thumbHandler) generateThumbnail(connection *Connection, filePath string, provider int, expectedSize int64) ([]byte, error) {
+	logger.Debug("thumbnail", connection.GetID(), "Generating thumbnail for provider %d path %q size %d", provider, filePath, expectedSize)
+
 	// Get file reader through connection (handles permissions, quotas, etc.)
 	reader, err := connection.getFileReader(filePath, 0, http.MethodGet)
 	if err != nil {
@@ -183,6 +219,10 @@ func (h *thumbHandler) generateThumbnail(connection *Connection, filePath string
 	data, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read file data: %w", err)
+	}
+
+	if int64(len(data)) != expectedSize {
+		logger.Warn("thumbnail", connection.GetID(), "Read %d bytes for path %q but expected %d", len(data), filePath, expectedSize)
 	}
 
 	// Create an image generator for thumbnail creation
