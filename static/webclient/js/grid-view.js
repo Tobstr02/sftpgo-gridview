@@ -211,7 +211,7 @@ const GridView = {
 
     isVideoFile(filename) {
         const ext = filename.split('.').pop().toLowerCase();
-        return ['mp4', 'mov', 'webm', 'ogv', 'avi', 'mkv', 'heic', 'heif'].includes(ext);
+        return ['mp4', 'mov', 'webm', 'ogv', 'avi', 'mkv'].includes(ext);
     },
 
     escapeHTML(str) {
