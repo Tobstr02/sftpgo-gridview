@@ -224,6 +224,12 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', function() {
         GridView.init('#grid_view_container');
+        // Dispatch viewChanged AFTER GridView listener is registered
+        setTimeout(() => {
+            document.dispatchEvent(new CustomEvent('viewChanged', {
+                detail: { view: ViewToggle.getView() }
+            }));
+        }, 0);
     });
 </script>
 <script type="text/javascript" {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}}>
@@ -593,6 +599,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                 deferRender: true,
                 processing: true,
                 lengthMenu: [ 10, 25, 50, 100, 250, 500 ],
+                pageLength: -1,
                 select: {
                     style: 'multi',
                     selector: 'td:first-child input[type="checkbox"]',
@@ -1036,6 +1043,32 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 
                 ImageViewer.open(items, clickedIndex);
             });
+
+            document.addEventListener('click', function(e) {
+                var link = e.target.closest('.grid-view a.iv-gallery-item');
+                if (!link) return;
+                e.preventDefault();
+
+                var links = document.querySelectorAll('.grid-view a.iv-gallery-item');
+                var items = [];
+                var clickedIndex = 0;
+                links.forEach(function(el, i) {
+                    items.push({
+                        src: el.getAttribute('href'),
+                        name: el.dataset.ivName || ''
+                    });
+                    if (el === link) clickedIndex = i;
+                });
+
+                ImageViewer.open(items, clickedIndex);
+            });
+
+            document.addEventListener('click', function(e) {
+                var link = e.target.closest('.grid-view a.video-cell');
+                if (!link) return;
+                e.preventDefault();
+                openMediaPlayer(link.dataset.filename, link.getAttribute('href'));
+            });
         }
 
         var handleSearchDatatable = function () {
@@ -1289,8 +1322,11 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
             handleToogleToolbar(pageSelected, totalSelected);
         }
 
+        var initialized = false;
         return {
             init: function () {
+                if (initialized) return;
+                initialized = true;
                 initLightbox();
                 initDatatable();
                 handleSearchDatatable();
