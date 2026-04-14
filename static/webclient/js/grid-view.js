@@ -40,7 +40,7 @@ const GridView = {
     populateFromDataTable() {
         if (!this.container || ViewToggle.getView() !== 'grid') return;
 
-        const table = $('#file_manager_list').DataTable();
+        const table = $('#file_manager_list').dataTable();
         const rows = document.querySelectorAll('#file_manager_list_body tr');
         const items = [];
 
