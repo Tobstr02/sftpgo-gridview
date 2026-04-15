@@ -573,6 +573,11 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 
         // Private functions
         var initDatatable = function () {
+            console.log('initDatatable() called');
+            if ($.fn.DataTable.isDataTable('#file_manager_list')) {
+                console.log('DataTable already exists, destroying first');
+                $('#file_manager_list').DataTable().destroy();
+            }
             dt = $("#file_manager_list").DataTable({
                 ajax: {
                     url: "{{.DirsURL}}?path={{.CurrentDir}}",
@@ -1323,8 +1328,10 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
         }
 
         var initialized = false;
+        console.log('KTDatatablesServerSide defined, initialized:', initialized);
         return {
             init: function () {
+                console.log('KTDatatablesServerSide.init() called, initialized:', initialized);
                 if (initialized) return;
                 initialized = true;
                 initLightbox();
@@ -2277,6 +2284,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
     }
 
     $(document).on("i18nshow", function(){
+        console.log('i18nshow event fired');
         KTDatatablesServerSide.init();
 
         var lastAddedFile = Date.now();
