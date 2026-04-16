@@ -40,7 +40,6 @@ const GridView = {
     populateFromDataTable() {
         if (!this.container || ViewToggle.getView() !== 'grid') return;
 
-        const table = $('#file_manager_list').dataTable();
         const rows = document.querySelectorAll('#file_manager_list_body tr');
         const items = [];
 
@@ -52,12 +51,17 @@ const GridView = {
             const href = link.getAttribute('href');
             const isDir = row.querySelector('.ki-folder') !== null;
 
-            // Get actual file mtime from DataTable row data (last_modified is Unix ms)
-            const rowData = table.row(row).data();
-            const mtime = rowData ? rowData.last_modified : '';
+            const cells = row.querySelectorAll('td');
+            let mtime = '';
+            if (cells.length >= 5) {
+                const lastModifiedCell = cells[4].textContent.trim();
+                const date = new Date(lastModifiedCell);
+                if (!isNaN(date.getTime())) {
+                    mtime = date.getTime().toString();
+                }
+            }
 
             // Extract size from cell index 2 (e.g., "222.2 KiB")
-            const cells = row.querySelectorAll('td');
             let size = '';
             if (cells.length >= 3) {
                 size = cells[2].textContent.trim();
