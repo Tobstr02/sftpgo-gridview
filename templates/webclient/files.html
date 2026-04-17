@@ -679,7 +679,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                         data: "last_modified",
                         render: function (data, type, row) {
                             if (type === 'display') {
-                                if (data){
+                                if (data != null && data !== ''){
                                     return `<span class="file-mtime" data-mtime="${data}">${$.t('general.datetime', {
                                         val: new Date(data),
                                         formatParams: {
