@@ -680,12 +680,12 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                         render: function (data, type, row) {
                             if (type === 'display') {
                                 if (data){
-                                    return $.t('general.datetime', {
+                                    return `<span class="file-mtime" data-mtime="${data}">${$.t('general.datetime', {
                                         val: new Date(data),
                                         formatParams: {
                                             val: { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' },
                                         }
-                                    });
+                                    })}</span>`;
                                 }
                                 return ""
                             }

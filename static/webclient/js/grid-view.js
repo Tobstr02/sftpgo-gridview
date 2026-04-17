@@ -53,12 +53,9 @@ const GridView = {
 
             const cells = row.querySelectorAll('td');
             let mtime = '';
-            if (cells.length >= 5) {
-                const lastModifiedCell = cells[4].textContent.trim();
-                const date = new Date(lastModifiedCell);
-                if (!isNaN(date.getTime())) {
-                    mtime = date.getTime().toString();
-                }
+            const mtimeSpan = cells[4]?.querySelector('.file-mtime');
+            if (mtimeSpan) {
+                mtime = mtimeSpan.dataset.mtime || '';
             }
 
             // Extract size from cell index 2 (e.g., "222.2 KiB")
