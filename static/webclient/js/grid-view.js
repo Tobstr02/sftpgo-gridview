@@ -53,7 +53,7 @@ const GridView = {
 
             const cells = row.querySelectorAll('td');
             let mtime = '';
-            const mtimeSpan = cells[4]?.querySelector('.file-mtime');
+            const mtimeSpan = cells[3]?.querySelector('.file-mtime');
             if (mtimeSpan) {
                 mtime = mtimeSpan.dataset.mtime || '';
             }
